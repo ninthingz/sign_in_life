@@ -6,7 +6,7 @@ class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
 
   @override
-  _CameraScreenState createState() => _CameraScreenState();
+  State<CameraScreen> createState() => _CameraScreenState();
 }
 
 class _CameraScreenState extends State<CameraScreen>
@@ -86,17 +86,6 @@ class _CameraScreenState extends State<CameraScreen>
       });
     } catch (e) {
       _showError('操作摄像头失败: $e');
-    }
-  }
-
-  void _disposeCamera() async {
-    if (_controller != null) {
-      await _controller!.dispose();
-      _controller = null;
-      setState(() {
-        _isCameraInitialized = false;
-        _isCameraOn = false;
-      });
     }
   }
 
