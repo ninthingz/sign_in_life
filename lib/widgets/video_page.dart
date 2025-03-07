@@ -36,7 +36,7 @@ class _VideoPageState extends State<VideoPage> {
       _showMessage('连接成功');
 
       _controllerSocket!.listen(
-        (_) {}, // 处理接收数据（如有需要）
+        (_) => {}, // 处理接收数据（如有需要）
         onError: (error) => _handleControllerDisconnect(),
         onDone: () => _handleControllerDisconnect(),
       );
@@ -89,14 +89,9 @@ class _VideoPageState extends State<VideoPage> {
     try {
       _socket = await Socket.connect(ip, port);
       _isConnected = true;
-      _socket!.listen(
-        _onData,
-        onError: _onError,
-        onDone: _onDone,
-        cancelOnError: false,
-      );
+      _socket!.listen(_onData, onError: _onError, onDone: _onDone);
     } catch (e) {
-      print('连接失败: $e');
+      _showMessage('连接失败: $e');
     }
   }
 
@@ -107,8 +102,14 @@ class _VideoPageState extends State<VideoPage> {
 
   void _processBuffer() {
     while (true) {
+      if (!_isConnected) {
+        _buffer.clear();
+        return;
+      }
       final bytes = _buffer.toBytes();
-      if (bytes.length < 4) return; // 长度头不完整
+      if (bytes.length < 4) {
+        return; // 长度头不完整
+      }
 
       // 读取小端格式的长度
       final lengthData = bytes.sublist(0, 4);
@@ -116,7 +117,9 @@ class _VideoPageState extends State<VideoPage> {
         lengthData.buffer,
       ).getUint32(0, Endian.little);
 
-      if (bytes.length < 4 + imageLength) return; // 数据不完整
+      if (bytes.length < 4 + imageLength) {
+        return; // 数据不完整
+      }
 
       // 提取图像数据
       final imageData = bytes.sublist(4, 4 + imageLength);
@@ -136,7 +139,7 @@ class _VideoPageState extends State<VideoPage> {
   }
 
   void _onError(Object error) {
-    print('发生错误: $error');
+    _showMessage('发生错误: $error');
     _disconnect();
   }
 
@@ -144,7 +147,10 @@ class _VideoPageState extends State<VideoPage> {
 
   void _disconnect() {
     _socket?.close();
+    _socket?.destroy();
     if (mounted) {
+      _buffer.clear();
+
       setState(() {
         _isConnected = false;
       });
@@ -164,6 +170,7 @@ class _VideoPageState extends State<VideoPage> {
   @override
   void dispose() {
     _socket?.close();
+
     _controllerSocket?.close();
     super.dispose();
   }
