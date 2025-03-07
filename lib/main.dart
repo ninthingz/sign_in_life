@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sign_in_life/widgets/camera_page.dart';
 import 'package:sign_in_life/widgets/settings_page.dart';
+import 'package:sign_in_life/widgets/video_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,7 +33,11 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [CameraScreen(), SettingsPage()];
+  final List<Widget> _pages = const [
+    VideoPage(),
+    CameraScreen(),
+    SettingsPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +58,11 @@ class _MainPageState extends State<MainPage> {
 }
 
 const _navBarItems = [
+  NavigationDestination(
+    icon: Icon(Icons.video_call_outlined),
+    selectedIcon: Icon(Icons.video_call_rounded),
+    label: 'Video',
+  ),
   NavigationDestination(
     icon: Icon(Icons.camera_alt_outlined),
     selectedIcon: Icon(Icons.camera_alt_rounded),
