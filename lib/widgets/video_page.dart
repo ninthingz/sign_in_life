@@ -70,9 +70,12 @@ class _VideoPageState extends State<VideoPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(milliseconds: 500),
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -141,9 +144,10 @@ class _VideoPageState extends State<VideoPage> {
 
   void _disconnect() {
     _socket?.close();
-    _isConnected = false;
     if (mounted) {
-      _imageBytes = null;
+      setState(() {
+        _isConnected = false;
+      });
     }
   }
 
@@ -159,8 +163,8 @@ class _VideoPageState extends State<VideoPage> {
 
   @override
   void dispose() {
-    _disconnect();
-    _controllerDisconnect();
+    _socket?.close();
+    _controllerSocket?.close();
     super.dispose();
   }
 
