@@ -162,6 +162,7 @@ Temperature: ${message.temperature / 10}℃
     String text = _textController.text;
     if (text.isEmpty || _writeCharacteristic == null) return;
 
+    text = "s$text";
     try {
       await _writeCharacteristic!.write(text.codeUnits);
       _addMessage(text, true);
