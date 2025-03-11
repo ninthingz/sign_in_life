@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:sign_in_life/protocol/binary_deserializer.dart';
+import 'package:sign_in_life/protocol/binary_protocol.dart';
 
 class Message {
   final String content;
@@ -116,13 +119,31 @@ class _BlePageState extends State<BlePage> {
     });
   }
 
+  void handleReceivedData(Uint8List data) {
+    if (data.isEmpty) return;
+    try {
+      final message = BinaryDeserializer.parseMessage(data);
+
+      if (message is BatteryStatus) {
+        _addMessage('''
+Received Battery Status:
+Level: ${message.level}%
+Status: ${message.status}
+Voltage: ${message.voltage / 1000}V
+Temperature: ${message.temperature / 10}℃
+''', false);
+      }
+    } catch (e) {
+      _addMessage('Parse error: $e', false);
+    }
+  }
+
   void _setupCharacteristics(BluetoothService service) {
     for (var characteristic in service.characteristics) {
       if (characteristic.uuid.toString().toLowerCase() == _readCharUuid) {
         characteristic.setNotifyValue(true);
-        characteristic.value.listen((value) {
-          String message = String.fromCharCodes(value);
-          _addMessage(message, false);
+        characteristic.lastValueStream.listen((value) {
+          handleReceivedData(Uint8List.fromList(value));
         });
       }
       if (characteristic.uuid.toString().toLowerCase() == _writeCharUuid) {
