@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sign_in_life/widgets/ble_page.dart';
 import 'package:sign_in_life/widgets/camera_page.dart';
 import 'package:sign_in_life/widgets/settings_page.dart';
 import 'package:sign_in_life/widgets/video_page.dart';
@@ -14,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '测试APP',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
@@ -35,6 +36,7 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _pages = const [
     VideoPage(),
+    BlePage(),
     CameraScreen(),
     SettingsPage(),
   ];
@@ -62,6 +64,11 @@ const _navBarItems = [
     icon: Icon(Icons.video_call_outlined),
     selectedIcon: Icon(Icons.video_call_rounded),
     label: 'Video',
+  ),
+  NavigationDestination(
+    icon: Icon(Icons.bluetooth_outlined),
+    selectedIcon: Icon(Icons.bluetooth_rounded),
+    label: 'BLE',
   ),
   NavigationDestination(
     icon: Icon(Icons.camera_alt_outlined),
