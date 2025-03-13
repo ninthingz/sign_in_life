@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:sign_in_life/widgets/battery_page.dart';
+import 'package:sign_in_life/state/app_state.dart';
 import 'package:sign_in_life/widgets/ble_page.dart';
 import 'package:sign_in_life/widgets/camera_page.dart';
 import 'package:sign_in_life/widgets/settings_page.dart';
 import 'package:sign_in_life/widgets/video_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AppState(), // 创建全局状态实例
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -35,6 +43,7 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
+    BatteryPage(),
     VideoPage(),
     BlePage(),
     CameraScreen(),
@@ -60,6 +69,11 @@ class _MainPageState extends State<MainPage> {
 }
 
 const _navBarItems = [
+  NavigationDestination(
+    icon: Icon(Icons.battery_0_bar),
+    selectedIcon: Icon(Icons.battery_full),
+    label: 'Battery',
+  ),
   NavigationDestination(
     icon: Icon(Icons.video_call_outlined),
     selectedIcon: Icon(Icons.video_call_rounded),

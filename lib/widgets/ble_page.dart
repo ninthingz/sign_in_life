@@ -32,7 +32,7 @@ class _BlePageState extends State<BlePage> {
 
   // 新增状态管理
   bool _isScanning = false;
-  List<BluetoothDevice> _foundDevices = [];
+  final List<BluetoothDevice> _foundDevices = [];
   StreamSubscription<List<ScanResult>>? _scanSubscription;
 
   @override
