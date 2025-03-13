@@ -43,16 +43,16 @@ class _BatteryPageState extends State<BatteryPage> {
           width: 120,
           height: 200,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.white, width: 2),
+            border: Border.all(width: 2),
             borderRadius: BorderRadius.circular(8),
           ),
         ),
         Positioned(
-          top: 4,
           bottom: 4,
           left: 4,
           right: 4,
           child: Container(
+            height: (200 - 8) * batteryStatus.level / 100,
             decoration: BoxDecoration(
               color: _getBatteryColor(batteryStatus.level).withOpacity(0.7),
               borderRadius: BorderRadius.circular(4),
@@ -71,14 +71,10 @@ class _BatteryPageState extends State<BatteryPage> {
           children: [
             Text(
               '${batteryStatus.level}%',
-              style: TextStyle(
-                fontSize: 24,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             if (batteryStatus.status == ChargingStatus.charging)
-              Icon(Icons.bolt, color: Colors.white, size: 32),
+              Icon(Icons.bolt, size: 32),
           ],
         ),
       ],
@@ -91,18 +87,12 @@ class _BatteryPageState extends State<BatteryPage> {
 
     return Column(
       children: [
-        Text(
-          '电压: ${batteryStatus.voltage} mV',
-          style: TextStyle(color: Colors.white),
-        ),
-        Text(
-          '温度: ${batteryStatus.temperature / 10} ℃',
-          style: TextStyle(color: Colors.white),
-        ),
+        Text('电压: ${batteryStatus.voltage} mV'),
+        Text('温度: ${batteryStatus.temperature / 10} ℃'),
         SizedBox(height: 20),
         Text(
           batteryStatus.status.toString().split('.').last,
-          style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
+          style: TextStyle(fontStyle: FontStyle.italic),
         ),
       ],
     );
@@ -111,7 +101,7 @@ class _BatteryPageState extends State<BatteryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
+      appBar: AppBar(title: Text('电池状态')),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
