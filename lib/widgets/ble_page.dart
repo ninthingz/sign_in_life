@@ -1,17 +1,10 @@
+// lib/pages/ble_page.dart
 import 'dart:async';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:sign_in_life/protocol/binary_deserializer.dart';
-import 'package:sign_in_life/protocol/binary_protocol.dart';
-
-class Message {
-  final String content;
-  final bool isSent;
-
-  Message(this.content, this.isSent);
-}
+import 'package:provider/provider.dart';
+import 'package:sign_in_life/state/app_state.dart';
 
 class BlePage extends StatefulWidget {
   const BlePage({super.key});
@@ -25,19 +18,15 @@ class _BlePageState extends State<BlePage> {
   final String _readCharUuid = "cf0fd776-bf2a-3f3b-d763-7369c17ba1e0";
   final String _writeCharUuid = "1b9df75a-b25d-6617-9f17-125de428cc38";
 
-  final TextEditingController _textController = TextEditingController();
-  final List<Message> _messages = [];
-  BluetoothDevice? _connectedDevice;
-  BluetoothCharacteristic? _writeCharacteristic;
-
-  // 新增状态管理
-  bool _isScanning = false;
+  late TextEditingController _textController;
   final List<BluetoothDevice> _foundDevices = [];
+  bool _isScanning = false;
   StreamSubscription<List<ScanResult>>? _scanSubscription;
 
   @override
   void initState() {
     super.initState();
+    _textController = TextEditingController();
     _checkPermissions();
   }
 
@@ -59,7 +48,7 @@ class _BlePageState extends State<BlePage> {
     _scanSubscription?.cancel();
     _scanSubscription = FlutterBluePlus.scanResults.listen((results) {
       _updateDeviceList(results);
-    }, onError: (e) => print("扫描错误: $e"));
+    }, onError: (e) => _showError(context, "Scan error: $e"));
 
     FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
   }
@@ -86,7 +75,9 @@ class _BlePageState extends State<BlePage> {
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
+    final appState = Provider.of<AppState>(context, listen: false);
     _stopScan();
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -95,7 +86,7 @@ class _BlePageState extends State<BlePage> {
 
     try {
       await device.connect(autoConnect: false);
-      setState(() => _connectedDevice = device);
+      appState.setConnectedDevice(device);
 
       List<BluetoothService> services = await device.discoverServices();
       for (var service in services) {
@@ -107,72 +98,49 @@ class _BlePageState extends State<BlePage> {
       Navigator.pop(context);
     } catch (e) {
       Navigator.pop(context);
-      _showError("连接失败: ${e.toString()}");
+      _showError(context, "连接失败: ${e.toString()}");
     }
   }
 
-  void _disconnect() {
-    _connectedDevice?.disconnect();
-    setState(() {
-      _connectedDevice = null;
-      _writeCharacteristic = null;
-    });
-  }
-
-  void handleReceivedData(Uint8List data) {
-    if (data.isEmpty) return;
-    try {
-      final message = BinaryDeserializer.parseMessage(data);
-
-      if (message is BatteryStatus) {
-        _addMessage('''
-Received Battery Status:
-Level: ${message.level}%
-Status: ${message.status}
-Voltage: ${message.voltage / 1000}V
-Temperature: ${message.temperature / 10}℃
-''', false);
-      }
-    } catch (e) {
-      _addMessage('Parse error: $e', false);
-    }
+  void _disconnect(BuildContext context) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    appState.connectedDevice?.disconnect();
+    appState.setConnectedDevice(null);
+    appState.setWriteCharacteristic(null);
   }
 
   void _setupCharacteristics(BluetoothService service) {
+    final appState = Provider.of<AppState>(context, listen: false);
+
     for (var characteristic in service.characteristics) {
       if (characteristic.uuid.toString().toLowerCase() == _readCharUuid) {
         characteristic.setNotifyValue(true);
         characteristic.lastValueStream.listen((value) {
-          handleReceivedData(Uint8List.fromList(value));
+          appState.handleReceivedData(Uint8List.fromList(value));
         });
       }
       if (characteristic.uuid.toString().toLowerCase() == _writeCharUuid) {
-        _writeCharacteristic = characteristic;
+        appState.setWriteCharacteristic(characteristic);
       }
     }
   }
 
-  void _addMessage(String text, bool isSent) {
-    setState(() {
-      _messages.add(Message(text, isSent));
-    });
-  }
-
-  void _sendMessage() async {
+  void _sendMessage(BuildContext context) async {
+    final appState = Provider.of<AppState>(context, listen: false);
     String text = _textController.text;
-    if (text.isEmpty || _writeCharacteristic == null) return;
+    if (text.isEmpty || appState.writeCharacteristic == null) return;
 
-    text = "s$text";
+    text = "s$text"; // 添加协议前缀
     try {
-      await _writeCharacteristic!.write(text.codeUnits);
-      _addMessage(text, true);
+      await appState.writeCharacteristic!.write(text.codeUnits);
+      appState.addMessage(Message(text, true));
       _textController.clear();
     } catch (e) {
-      _showError("发送失败: ${e.toString()}");
+      _showError(context, "Send failed: ${e.toString()}");
     }
   }
 
-  void _showError(String message) {
+  void _showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
@@ -206,54 +174,17 @@ Temperature: ${message.temperature / 10}℃
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('蓝牙聊天'),
-        actions: [
-          if (_connectedDevice != null)
-            IconButton(
-              icon: const Icon(Icons.link_off),
-              onPressed: _disconnect,
-            ),
-        ],
-      ),
-      body:
-          _connectedDevice == null
-              ? Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child:
-                          _foundDevices.isEmpty
-                              ? const Center(child: Text("未发现设备"))
-                              : _buildDeviceList(),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _isScanning ? null : _startScan,
-                      child: Text(_isScanning ? "扫描中..." : "开始扫描"),
-                    ),
-                  ],
-                ),
-              )
-              : _buildChatInterface(),
-      floatingActionButton:
-          _connectedDevice == null ? _buildScanButton() : null,
-    );
-  }
+  Widget _buildChatInterface(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
 
-  Widget _buildChatInterface() {
     return Column(
       children: [
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(8),
-            itemCount: _messages.length,
+            itemCount: appState.messages.length,
             itemBuilder: (context, index) {
-              final message = _messages[index];
+              final message = appState.messages[index];
               return Align(
                 alignment:
                     message.isSent
@@ -283,14 +214,14 @@ Temperature: ${message.temperature / 10}℃
                     hintText: '输入消息...',
                     border: OutlineInputBorder(),
                   ),
-                  onSubmitted: (_) => _sendMessage(),
+                  onSubmitted: (_) => _sendMessage(context),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.send),
                 color: Colors.blue,
-                onPressed: _sendMessage,
+                onPressed: () => _sendMessage(context),
               ),
             ],
           ),
@@ -299,10 +230,59 @@ Temperature: ${message.temperature / 10}℃
     );
   }
 
+  Widget _buildConnectionStatus(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+
+    return IconButton(
+      icon: const Icon(Icons.link_off),
+      onPressed:
+          appState.connectedDevice != null ? () => _disconnect(context) : null,
+    );
+  }
+
+  Widget _buildScanningInterface(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Expanded(
+            child:
+                _foundDevices.isEmpty
+                    ? const Center(child: Text("No devices found"))
+                    : _buildDeviceList(),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _isScanning ? null : () => _startScan(),
+            child: Text(_isScanning ? "Scanning..." : "Start Scan"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    BluetoothDevice? connectedDevice =
+        context.watch<AppState>().connectedDevice;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('蓝牙管理'),
+        actions: [_buildConnectionStatus(context)],
+      ),
+      body:
+          connectedDevice == null
+              ? _buildScanningInterface(context)
+              : _buildChatInterface(context),
+      floatingActionButton: connectedDevice == null ? _buildScanButton() : null,
+    );
+  }
+
   @override
   void dispose() {
     _scanSubscription?.cancel();
-    _connectedDevice?.disconnect();
+    _textController.dispose();
     super.dispose();
   }
 }

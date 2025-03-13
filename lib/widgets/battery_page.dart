@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sign_in_life/protocol/binary_protocol.dart';
+import 'package:sign_in_life/state/app_state.dart';
 
 class BatteryPage extends StatefulWidget {
   const BatteryPage({super.key});
@@ -9,26 +11,18 @@ class BatteryPage extends StatefulWidget {
 }
 
 class _BatteryPageState extends State<BatteryPage> {
-  BatteryStatus? _batteryStatus;
-
   @override
   void initState() {
     super.initState();
     // 初始化状态
-    _batteryStatus = BatteryStatus(
-      level: 50,
-      status: ChargingStatus.charging,
-      voltage: 3800,
-      temperature: 250,
-    );
   }
 
   // 暴露给外部的状态更新接口
-  void updateBatteryStatus(BatteryStatus newStatus) {
-    setState(() {
-      _batteryStatus = newStatus;
-    });
-  }
+  // void updateBatteryStatus(BatteryStatus newStatus) {
+  //   setState(() {
+  //     _batteryStatus = newStatus;
+  //   });
+  // }
 
   Color _getBatteryColor(int level) {
     if (level < 20) return Colors.red;
@@ -36,8 +30,9 @@ class _BatteryPageState extends State<BatteryPage> {
     return Colors.green;
   }
 
-  Widget _buildBatteryIcon() {
-    if (_batteryStatus == null) {
+  Widget _buildBatteryIcon(BuildContext context) {
+    final batteryStatus = context.watch<AppState>().batteryStatus;
+    if (batteryStatus == null) {
       return CircularProgressIndicator();
     }
 
@@ -59,30 +54,30 @@ class _BatteryPageState extends State<BatteryPage> {
           right: 4,
           child: Container(
             decoration: BoxDecoration(
-              color: _getBatteryColor(_batteryStatus!.level).withOpacity(0.7),
+              color: _getBatteryColor(batteryStatus.level).withOpacity(0.7),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
         ),
         Positioned(
-          bottom: _batteryStatus!.level.toDouble() * 1.8,
+          bottom: batteryStatus.level.toDouble() * 1.8,
           child: Container(
-            height: 200 * _batteryStatus!.level / 100 - 8,
-            color: _getBatteryColor(_batteryStatus!.level),
+            height: 200 * batteryStatus.level / 100 - 8,
+            color: _getBatteryColor(batteryStatus.level),
           ),
         ),
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${_batteryStatus!.level}%',
+              '${batteryStatus.level}%',
               style: TextStyle(
                 fontSize: 24,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (_batteryStatus!.status == ChargingStatus.charging)
+            if (batteryStatus.status == ChargingStatus.charging)
               Icon(Icons.bolt, color: Colors.white, size: 32),
           ],
         ),
@@ -90,22 +85,23 @@ class _BatteryPageState extends State<BatteryPage> {
     );
   }
 
-  Widget _buildStatusInfo() {
-    if (_batteryStatus == null) return SizedBox();
+  Widget _buildStatusInfo(BuildContext context) {
+    final batteryStatus = context.watch<AppState>().batteryStatus;
+    if (batteryStatus == null) return SizedBox();
 
     return Column(
       children: [
         Text(
-          '电压: ${_batteryStatus!.voltage} mV',
+          '电压: ${batteryStatus.voltage} mV',
           style: TextStyle(color: Colors.white),
         ),
         Text(
-          '温度: ${_batteryStatus!.temperature / 10} ℃',
+          '温度: ${batteryStatus.temperature / 10} ℃',
           style: TextStyle(color: Colors.white),
         ),
         SizedBox(height: 20),
         Text(
-          _batteryStatus!.status.toString().split('.').last,
+          batteryStatus.status.toString().split('.').last,
           style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
         ),
       ],
@@ -120,9 +116,9 @@ class _BatteryPageState extends State<BatteryPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildBatteryIcon(),
+            _buildBatteryIcon(context),
             SizedBox(height: 40),
-            _buildStatusInfo(),
+            _buildStatusInfo(context),
           ],
         ),
       ),
