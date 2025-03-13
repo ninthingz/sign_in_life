@@ -4,6 +4,7 @@ import 'package:sign_in_life/widgets/battery_page.dart';
 import 'package:sign_in_life/state/app_state.dart';
 import 'package:sign_in_life/widgets/ble_page.dart';
 import 'package:sign_in_life/widgets/camera_page.dart';
+import 'package:sign_in_life/widgets/map_page.dart';
 import 'package:sign_in_life/widgets/settings_page.dart';
 import 'package:sign_in_life/widgets/video_page.dart';
 
@@ -46,6 +47,7 @@ class _MainPageState extends State<MainPage> {
     BatteryPage(),
     VideoPage(),
     BlePage(),
+    MapPage(),
     CameraScreen(),
     SettingsPage(),
   ];
@@ -83,6 +85,11 @@ const _navBarItems = [
     icon: Icon(Icons.bluetooth_outlined),
     selectedIcon: Icon(Icons.bluetooth_rounded),
     label: 'BLE',
+  ),
+  NavigationDestination(
+    icon: Icon(Icons.map_outlined),
+    selectedIcon: Icon(Icons.map_rounded),
+    label: 'Map',
   ),
   NavigationDestination(
     icon: Icon(Icons.camera_alt_outlined),
