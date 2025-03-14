@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <header>
+    <title>高德地图</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <script type="text/javascript">
+      window._AMapSecurityConfig = {
+        securityJsCode: "f9ee10db2d46fcb47f200374866023c2",
+      };
+    </script>
+    <script
+      type="text/javascript"
+      src="https://webapi.amap.com/maps?v=1.4.15&key=5f61e11883ca521bc70678927485511e"
+    ></script>
+
+    <style>
+      html {
+        height: 100vh;
+      }
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      #container {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </header>
+  <body>
+    <div id="container"></div>
+
+    <script>
+      var map = new AMap.Map("container");
+    </script>
+  </body>
+</html>
