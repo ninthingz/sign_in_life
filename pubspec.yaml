@@ -39,6 +39,9 @@ dependencies:
   shared_preferences: ^2.5.2
   flutter_blue_plus: ^1.35.3
   provider: ^6.1.2
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.1
+  flutter_map_cancellable_tile_provider: ^3.1.0
 
 dev_dependencies:
   flutter_test:
