@@ -2,6 +2,8 @@ package com.example.sign_in_life;
 
 import static android.content.ContentValues.TAG;
 
+import static io.flutter.util.PathUtils.getFilesDir;
+
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -67,7 +69,10 @@ class NativeView implements PlatformView, MethodChannel.MethodCallHandler {
 
     private MethodChannel methodChannel;
 
+    private Context context;
+
     NativeView(@NonNull Context context, BinaryMessenger messenger, int id, @Nullable Map<String, Object> creationParams) {
+        this.context = context;
         methodChannel = new MethodChannel(messenger, "com.example.sign_in_life/native_view");
         methodChannel.setMethodCallHandler(this);
         MapsInitializer.updatePrivacyShow(context, true, true);
@@ -136,8 +141,96 @@ class NativeView implements PlatformView, MethodChannel.MethodCallHandler {
         if (call.method.equals("startLocation")) {
             startLocation();
             result.success(null);
-        } else {
+        } else if (call.method.equals("startRecording")) {
+            try {
+                startRecording();
+            } catch (Exception e) {
+                result.success(null);
+            }
+            result.success(null);
+        } else if (call.method.equals("stopRecording")) {
+            stopRecording();
+            result.success(null);
+        } else if (call.method.equals("playbackRecording")) {
+            playbackRecording();
+            result.success(null);
+        }
+        else {
             result.notImplemented();
         }
     }
+
+    public void startRecording() {
+        if (!recording) {
+            recording = true;
+            Toast.makeText(context, "开始记录轨迹", Toast.LENGTH_SHORT).show();
+            try {
+                lbsTraceClient = LBSTraceClient.getInstance(context);
+                traceListener = new MyTraceStatusListener(aMap, context);
+                lbsTraceClient.startTrace(traceListener); //开始采集,需要传入一个状态回调监听。
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void stopRecording() {
+        if (recording) {
+            recording = false;
+            Toast.makeText(context, "停止记录轨迹", Toast.LENGTH_SHORT).show();
+            lbsTraceClient.stopTrace(); //停止采集
+            traceListener.saveRawTrack();
+            traceListener.saveCorrectedTrack();
+        }
+    }
+
+    public void playbackRecording() {
+            File file = new File(getFilesDir(context), "corrected_track_data.json");
+            if (file.exists()) {
+                try {
+                    FileInputStream fis = new FileInputStream(file);
+                    byte[] buffer = new byte[(int) file.length()];
+                    fis.read(buffer);
+                    fis.close();
+                    String content = new String(buffer);
+                    Log.d(TAG, content);
+                    List<LatLng> rectifications = new Gson().fromJson(content, new TypeToken<List<LatLng>>() {
+                    }.getType());
+
+                    aMap.addPolyline(new PolylineOptions().
+                            addAll(rectifications).width(10).color(Color.argb(255, 1, 1, 255)));
+
+
+// 获取轨迹坐标点
+                    LatLngBounds bounds = new LatLngBounds(rectifications.get(0), rectifications.get(rectifications.size() - 2));
+                    aMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 50));
+
+                    SmoothMoveMarker smoothMarker = new SmoothMoveMarker(aMap);
+// 设置滑动的图标
+//                    smoothMarker.setDescriptor(BitmapDescriptorFactory.fromResource(R.drawable.ic_launcher_foreground));
+
+                    LatLng drivePoint = rectifications.get(0);
+                    Pair<Integer, LatLng> pair = SpatialRelationUtil.calShortestDistancePoint(rectifications, drivePoint);
+                    rectifications.set(pair.first, drivePoint);
+                    List<LatLng> subList = rectifications.subList(pair.first, rectifications.size());
+
+// 设置滑动的轨迹左边点
+                    smoothMarker.setPoints(subList);
+// 设置滑动的总时间
+                    smoothMarker.setTotalDuration(10);
+// 开始滑动
+                    smoothMarker.startSmoothMove();
+
+
+
+                    Log.d(TAG, content);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error reading file", e);
+                }
+            } else {
+                Toast.makeText(context, "没有找到轨迹数据", Toast.LENGTH_SHORT).show();
+            }
+    }
+
+
 }

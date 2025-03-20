@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_map/flutter_map.dart';
@@ -21,6 +23,7 @@ class _MapPageState extends State<MapPage> {
   late PermissionStatus _permissionGranted;
   late LocationData _locationData;
   late WebViewController _webViewController;
+  var recordingText = '开始记录';
 
   final MethodChannel nativeChannel = const MethodChannel(
     'com.example.sign_in_life/native_view',
@@ -102,16 +105,24 @@ class _MapPageState extends State<MapPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement start recording logic
-                  print('开始记录');
+                onPressed: () async {
+                  if (recordingText == "开始记录") {
+                    await nativeChannel.invokeMethod('startRecording');
+                    setState(() {
+                      recordingText = '停止记录';
+                    });
+                  } else {
+                    await nativeChannel.invokeMethod('stopRecording');
+                    setState(() {
+                      recordingText = '开始记录';
+                    });
+                  }
                 },
-                child: const Text('开始记录'),
+                child: Text(recordingText),
               ),
               ElevatedButton(
                 onPressed: () {
-                  // TODO: Implement replay record logic
-                  print('重放记录');
+                  nativeChannel.invokeListMethod("playbackRecording");
                 },
                 child: const Text('重放记录'),
               ),
