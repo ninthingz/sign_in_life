@@ -63,3 +63,13 @@ android {
 flutter {
     source = "../.."
 }
+
+
+dependencies {
+    // https://mvnrepository.com/artifact/com.amap.api/3dmap
+    implementation("com.amap.api:3dmap:10.0.600")
+
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation("com.google.code.gson:gson:2.12.1")
+
+}

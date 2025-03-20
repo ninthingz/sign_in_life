@@ -4,15 +4,38 @@
     <title>高德地图</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+
     <script type="text/javascript">
       window._AMapSecurityConfig = {
         securityJsCode: "f9ee10db2d46fcb47f200374866023c2",
       };
     </script>
-    <script
-      type="text/javascript"
-      src="https://webapi.amap.com/maps?v=1.4.15&key=5f61e11883ca521bc70678927485511e"
-    ></script>
+    <script src="https://webapi.amap.com/loader.js"></script>
+    <script type="text/javascript">
+      var map;
+      AMapLoader.load({
+        key: "5f61e11883ca521bc70678927485511e", //申请好的Web端开发者key，调用 load 时必填
+        version: "2.0", //指定要加载的 JS API 的版本，缺省时默认为 1.4.15
+      })
+        .then((AMap) => {
+          //JS API 加载完成后获取AMap对象
+          map = new AMap.Map("container", {
+            resizeEnable: true,
+            viewMode: "2D", //默认使用 2D 模式
+            zoom: 18, //地图级别
+          });
+        })
+        .catch((e) => {
+          console.error(e); //加载错误提示
+        });
+
+      function setLocation(latitude, longitude) {
+        if (!map) {
+          return;
+        }
+        map.setCenter([longitude, latitude]);
+      }
+    </script>
 
     <style>
       html {
@@ -30,9 +53,5 @@
   </header>
   <body>
     <div id="container"></div>
-
-    <script>
-      var map = new AMap.Map("container");
-    </script>
   </body>
 </html>

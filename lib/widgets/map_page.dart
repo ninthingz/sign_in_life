@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:location/location.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter/services.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -15,15 +17,109 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   final TextEditingController _serverController = TextEditingController();
 
+  late bool _serviceEnabled;
+  late PermissionStatus _permissionGranted;
+  late LocationData _locationData;
+  late WebViewController _webViewController;
+
+  final MethodChannel nativeChannel = const MethodChannel(
+    'com.example.sign_in_life/native_view',
+  );
+
   @override
   void initState() {
     super.initState();
-  } // 保存数据方法
+    locationInit();
+    initWebViewController();
+  }
+
+  Future<void> locationInit() async {
+    Location location = Location();
+
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    // nativeChannel.invokeMethod('startLocation');
+
+    _locationData = await location.getLocation();
+    _webViewController.runJavaScript(
+      'setLocation(${_locationData.latitude}, ${_locationData.longitude})',
+    );
+    print(
+      "Location changed: ${_locationData.latitude}, ${_locationData.longitude}",
+    );
+
+    location.onLocationChanged.listen((LocationData currentLocation) {
+      _locationData = currentLocation;
+
+      _webViewController.runJavaScript(
+        'setLocation(${_locationData.latitude}, ${_locationData.longitude})',
+      );
+      print(
+        "Location changed: ${currentLocation.latitude}, ${currentLocation.longitude}",
+      );
+    });
+  }
 
   @override
   void dispose() {
     _serverController.dispose();
     super.dispose();
+  }
+
+  Widget buildAndroidView(BuildContext context) {
+    const String viewType = '<platform-view-type>';
+    final Map<String, dynamic> creationParams = <String, dynamic>{};
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: AndroidView(
+            viewType: viewType,
+            layoutDirection: TextDirection.ltr,
+            creationParams: creationParams,
+            creationParamsCodec: const StandardMessageCodec(),
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  // TODO: Implement start recording logic
+                  print('开始记录');
+                },
+                child: const Text('开始记录'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // TODO: Implement replay record logic
+                  print('重放记录');
+                },
+                child: const Text('重放记录'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget buildMap(BuildContext context) {
@@ -61,7 +157,22 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget buildWebMap(BuildContext context) {
-    var controller =
+    return WebViewWidget(controller: _webViewController);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text("Map"),
+      ),
+      body: Expanded(child: buildAndroidView(context)),
+    );
+  }
+
+  void initWebViewController() {
+    _webViewController =
         WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setNavigationDelegate(
@@ -84,17 +195,5 @@ class _MapPageState extends State<MapPage> {
               'file:///android_asset/flutter_assets/assets/html/index.html',
             ),
           );
-    return WebViewWidget(controller: controller);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text("Settings"),
-      ),
-      body: Expanded(child: buildWebMap(context)),
-    );
   }
 }
