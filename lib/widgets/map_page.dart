@@ -45,27 +45,6 @@ class _MapPageState extends State<MapPage> {
         return;
       }
     }
-
-    // nativeChannel.invokeMethod('startLocation');
-
-    _locationData = await location.getLocation();
-    _webViewController.runJavaScript(
-      'setLocation(${_locationData.latitude}, ${_locationData.longitude})',
-    );
-    print(
-      "Location changed: ${_locationData.latitude}, ${_locationData.longitude}",
-    );
-
-    location.onLocationChanged.listen((LocationData currentLocation) {
-      _locationData = currentLocation;
-
-      _webViewController.runJavaScript(
-        'setLocation(${_locationData.latitude}, ${_locationData.longitude})',
-      );
-      print(
-        "Location changed: ${currentLocation.latitude}, ${currentLocation.longitude}",
-      );
-    });
   }
 
   @override

@@ -18,8 +18,10 @@ import android.provider.Settings;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -124,6 +126,7 @@ class NativeView implements PlatformView, MethodChannel.MethodCallHandler {
         //从location对象中获取经纬度信息，地址描述信息，建议拿到位置之后调用逆地理编码接口获取（获取地址描述数据章节有介绍）
 //        Log.d(TAG, "onMyLocationChange: " + location);
 
+
         if (location.getLatitude() == 0 && location.getLongitude() == 0) {
             return;
         }
@@ -138,6 +141,29 @@ class NativeView implements PlatformView, MethodChannel.MethodCallHandler {
             initPosition = true;
             aMap.moveCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition(new LatLng(location.getLatitude(), location.getLongitude()), 18, 0, 0)));
         }
+
+        // Create and display location info in top-left corner
+        TextView locationInfoTextView = new TextView(context);
+        locationInfoTextView.setTextColor(Color.BLACK);
+        locationInfoTextView.setBackgroundColor(Color.TRANSPARENT);
+        locationInfoTextView.setPadding(10, 5, 10, 5);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(10, 10, 0, 0);
+        locationInfoTextView.setLayoutParams(params);
+
+        // Add the TextView to the MapView
+        ((ViewGroup) mMapView).addView(locationInfoTextView);
+
+        // Update location info
+        String info = String.format("经度: %.6f 纬度: %.6f 速度: %.1f km/h",
+                location.getLongitude(),
+                location.getLatitude(),
+                location.getSpeed() * 3.6); // m/s to km/h
+        locationInfoTextView.setText(info);
+
         if (recording) {
             List<LatLng> polyLocations = new ArrayList<>();
             polyLocations.add(new LatLng(oldLocation.getLatitude(), oldLocation.getLongitude()));
