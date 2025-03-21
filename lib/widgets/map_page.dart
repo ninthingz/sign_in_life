@@ -19,7 +19,6 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   final TextEditingController _serverController = TextEditingController();
 
-  late bool _serviceEnabled;
   late PermissionStatus _permissionGranted;
   late LocationData _locationData;
   late WebViewController _webViewController;
@@ -38,14 +37,6 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> locationInit() async {
     Location location = Location();
-
-    _serviceEnabled = await location.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await location.requestService();
-      if (!_serviceEnabled) {
-        return;
-      }
-    }
 
     _permissionGranted = await location.hasPermission();
     if (_permissionGranted == PermissionStatus.denied) {
